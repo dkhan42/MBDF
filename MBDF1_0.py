@@ -226,13 +226,15 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     if pad==None:
         pad = max([len(arr) for arr in nuclear_charges])
 
+    charges=np.array([arr.astype(np.float64) for arr in nuclear_charges])
+    
     if progress==True:
 
         from tqdm import tqdm    
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood*1.88973,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in tqdm(list(zip(nuclear_charges,coords))))
+        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood*1.88973,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in tqdm(list(zip(charges,coords))))
     
     else:
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood*1.88973,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in zip(nuclear_charges,coords))
+        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood*1.88973,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in zip(charges,coords))
     
     mbdf=np.array(mbdf)
     
@@ -341,7 +343,7 @@ def generate_bob(elements,coords,n_jobs=-1,asize={'C': 7, 'H': 16, 'N': 3, 'O': 
     :rtype: numpy array
     """
     from tqdm import tqdm
-    
+
     bob_arr = Parallel(n_jobs=n_jobs)(delayed(bob)(atoms,coods,asize) for atoms,coods in tqdm(list(zip(elements,coords))))
 
     return np.array(bob_arr)
