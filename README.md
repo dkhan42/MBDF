@@ -16,7 +16,8 @@ To generate the local MBDF representation for your entire dataset:
 import MBDF
 rep = MBDF.generate_mbdf(charges, coordinates, n_jobs)
 ```
-Where `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset. Likewise, `coordinates` should be an array containing lists (or arrays) of atomic coordinates for all molecules. Note that the atomic coordinates should be in Angstrom. The representation hyperparameters were optimized in Bohr so the function automatically converts the coordinates from Angstrom to Bohr. The default local cutoff used is 12 Bohr which corresponds to about 6 Angstroms.
+Where `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset. Likewise, `coordinates` should be an array containing lists (or arrays) of atomic coordinates for all molecules. 
+Note : The atomic coordinates should be in Angstrom. The representation hyperparameters were optimized in Bohr so the function automatically converts the coordinates from Angstrom to Bohr. The default local cutoff used is 12 Bohr which corresponds to about 6 Angstroms.
 
 The `n_jobs` parameter controls the number of cores over which the representation generation will be parallelized. Default value is `-1` which means all cores in the system will be used.
 
