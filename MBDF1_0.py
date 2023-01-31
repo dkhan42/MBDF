@@ -47,13 +47,14 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12):
     
     twob=np.zeros((size,2))
     threeb=np.zeros((size,size,5))
+    z1=z**0.8
 
     for j in range(size):
         rij=atom-coods[j]
         rij_norm=np.linalg.norm(rij)
-        
+
         if rij_norm!=0 and rij_norm<cutoff_r:
-            
+            z2=charges[j]**0.8
             twob[j]=rij_norm,z*charges[j]
 
             for k in range(size):
@@ -61,6 +62,7 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12):
                     rik=atom-coods[k]
                     rik_norm=np.linalg.norm(rik)
                     if rik_norm!=0 and rik_norm<cutoff_r:
+                        z3=charges[k]**0.8
                         rkj=coods[k]-coods[j]
                         rkj_norm=np.linalg.norm(rkj)
                         
@@ -69,7 +71,7 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12):
                         threeb[j][k][2] = np.minimum(1.0,np.maximum(np.dot(-rkj,rik)/((rkj_norm*rik_norm)),-1.0))
                         
                         atm = (rij_norm*rik_norm*rkj_norm)**4
-                        charge = (z**0.8)*(charges[j]**0.8)*(charges[k]**0.8)
+                        charge = z1*z2*z3
                         
                         threeb[j][k][3:] =  atm, charge
 
@@ -227,7 +229,7 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
         pad = max([len(arr) for arr in nuclear_charges])
 
     charges=np.array([arr.astype(np.float64) for arr in nuclear_charges])
-    
+
     if progress==True:
 
         from tqdm import tqdm    
