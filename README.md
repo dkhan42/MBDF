@@ -24,6 +24,4 @@ The `n_jobs` parameter controls the number of cores over which the representatio
 
 A progress bar for the representation generation process can be obtained by passing the parameter `progress = True` to the function above. This requires the `tqdm` library.
 
-It is **highly** recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their distribution in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods and the representation performs better
-
-
+It is recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their distribution in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods. The normalization can be turned off using `normalized = False'
