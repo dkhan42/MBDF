@@ -230,7 +230,7 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     
     for i in range(len(nuclear_charges)):
         charges.append(nuclear_charges[i].astype(np.float64))
-        assert len(nuclear_charges[i]) == len(coords[i], "charges and coordinates mis-match for molecule number "+str(i))
+        assert len(nuclear_charges[i]) == len(coords[i]), "charges and coordinates mis-match for molecule number "+str(i)
     
     charges=np.array(charges)
 
