@@ -223,13 +223,22 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     
     :return: NxPadx6 array containing Padx6 dimensional MBDF matrices for the N molecules
     """
+
+    assert nuclear_charges.shape[0] == coords.shape[0], "charges and coordinates array length mis-match"
+
+    charges=[]
+    
+    for i in range(len(nuclear_charges)):
+        charges.append(nuclear_charges[i].astype(np.float64))
+        assert len(nuclear_charges[i]) == len(coords[i], "charges and coordinates mis-match for molecule number "+str(i))
+    
+    charges=np.array(charges)
+
     rlength = int(cutoff_r/step_r)+1
     grid1,grid2 = fourier_grid()
 
     if pad==None:
         pad = max([len(arr) for arr in nuclear_charges])
-
-    charges=np.array([arr.astype(np.float64) for arr in nuclear_charges])
 
     if progress==True:
 
@@ -306,15 +315,16 @@ def generate_DF(mbdf,nuclear_charges,n_jobs=-1,bw=0.07,binsize=0.2,kernel='gauss
     bin=np.arange(-10,10,binsize)
     size=len(bin)
     gridsize=len(keys)*size
-    N=mbdf.shape[0]
+    n=mbdf.shape[0]
 
     reps=[10*mbdf[:,:,i]/(np.max(np.abs(mbdf[:,:,i]))) for i in range(fs)]
-    kde=np.zeros((N,gridsize*fs))
+    kde=np.zeros((n,gridsize*fs))
     
+    from tqdm import tqdm
     for i in range(fs):
         #arr=np.zeros((N,gridsize))
-        arr = Parallel(n_jobs=n_jobs)(delayed(density_estimate)(reps[j],nuclear_charges[j],size,keys,bin,bw,kernel,scaling='root') for j in range(N))
-        kde[:,i*gridsize:(i+1)*gridsize] = arr
+        arr = Parallel(n_jobs=n_jobs)(delayed(density_estimate)(rep,q,size,keys,bin,bw,kernel,scaling='root') for rep,q in tqdm(list(zip(reps[i],nuclear_charges))))
+        kde[:,i*gridsize:(i+1)*gridsize] = np.array(arr)
     
     return kde
 
@@ -404,3 +414,34 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                 else:
                     bob.extend(np.zeros((asize[keys[i]]*asize[keys[j]])))
     return np.array(bob) 
+
+@numba.jit(nopython=True)
+def local_symmetric_laplacian_kernel(X,Q,sigma):
+    n = X.shape[0]
+    pad = X.shape[1]
+    assert n == Q.shape[0], "Representation and nuclear charges shape mis-match"
+
+    K = np.zeros((n,n), dtype = np.float64)
+
+    for i in range(n):
+
+        for j in range(i,n):
+            if i == j:
+                local = 0.5
+            else:
+
+                local = 0
+                
+                for m in range(pad):
+                    if Q[i][m] > 1:
+                        break
+                    for l in range(pad):
+                        if Q[i][m] != Q[j][l] :
+                            x = X[i][m]-X[j][l]
+                            dist = np.linalg.norm(x, ord=1)
+                            k = np.exp(-dist/sigma)
+                            local += k
+                        
+        K[i][j] = local
+    
+    return K+(K.T)
