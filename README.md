@@ -25,3 +25,10 @@ The `n_jobs` parameter controls the number of cores over which the representatio
 A progress bar for the representation generation process can be obtained by passing the parameter `progress = True` to the function above. This requires the `tqdm` library.
 
 It is recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their maximum in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods. The normalization can be turned off using `normalized = False`
+
+To generate the global Density of functionals representation the MBDF array is required :
+```
+import MBDF
+rep = MBDF.generate_DF(mbdf, charges, n_jobs)
+```
+Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
