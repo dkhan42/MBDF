@@ -1,7 +1,7 @@
 # MBDF
 Python script for generating the local Many Body Distribution Functionals (MBDF) and global Density of Functionals (DF) representations.
 It also contains functions for generating the Coulomb Matrix (CM) and Bag of Bonds (BOB) representations.
-MBDF is a local representation (atomic) and works with local kernels while DF is its global form and works with global kernels.
+MBDF is a local representation (atomic) and works with local kernels while DF is its global form and works with global kernels. It is recommended to not vectorize the MBDF representation if a global representation is required. DF should be used instead.
 
 # Dependencies
 Python libraries required : 
