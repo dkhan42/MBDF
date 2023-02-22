@@ -33,5 +33,3 @@ import MBDF
 rep = MBDF.generate_DF(mbdf, charges)
 ```
 Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
-
-The local MBDF representation performs best with the local laplacian kernel (local gaussian isn't much worse). The global DF representation performs best with the global gaussian kernel (global laplacian is quite a bit worse).
