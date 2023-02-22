@@ -1,6 +1,7 @@
 # MBDF
 Python script for generating the local Many Body Distribution Functionals (MBDF) and global Density of Functionals (DF) representations.
 It also contains functions for generating the Coulomb Matrix (CM) and Bag of Bonds (BOB) representations.
+MBDF is a local representation (atomic) and works with local kernels while DF is its global form and works with global kernels.
 
 # Dependencies
 Python libraries required : 
@@ -11,7 +12,7 @@ Python libraries required :
 If a progress bar is desired during the representation generation then the `tqdm` library is also required.
 
 # Usage
-To generate the local MBDF representation for your entire dataset:
+To generate the **local** MBDF representation for your entire dataset:
 ```
 import MBDF
 rep = MBDF.generate_mbdf(charges, coordinates, n_jobs)
@@ -26,7 +27,7 @@ A progress bar for the representation generation process can be obtained by pass
 
 It is recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their maximum in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods. The normalization can be turned off using `normalized = False`
 
-To generate the global Density of functionals representation the MBDF array is required :
+To generate the **global** Density of functionals representation the MBDF array is required :
 ```
 import MBDF
 rep = MBDF.generate_DF(mbdf, charges)
