@@ -29,6 +29,8 @@ It is recommended that the MBDF arrays be generated for the entire dataset (trai
 To generate the global Density of functionals representation the MBDF array is required :
 ```
 import MBDF
-rep = MBDF.generate_DF(mbdf, charges, n_jobs)
+rep = MBDF.generate_DF(mbdf, charges)
 ```
 Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
+
+The local MBDF representation performs best with the local laplacian kernel (local gaussian isn't much worse). The global DF representation performs best with the golbal gaussian kernel (global laplacian is quite a bit worse).
