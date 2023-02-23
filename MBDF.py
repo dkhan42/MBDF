@@ -421,3 +421,57 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                 else:
                     bob.extend(np.zeros((asize[keys[i]]*asize[keys[j]])))
     return np.array(bob) 
+
+@numba.jit(nopython=True)
+def local_symmetric_laplacian_kernel(X, Q, sigma, pad, i, n):
+    K = np.zeros(n, dtype = np.float64)
+
+    for j in range(i,n):
+
+        if i == j:
+            local = 0.5
+        else:
+            local = 0.0
+            
+            for m in range(pad):
+                q1 = Q[i][m]
+                if q1 == 0.0:
+                    break
+                else:
+                    for l in range(pad):
+                        if q1 == Q[j][l] :
+                            x = X[i][m]-X[j][l]
+                            dist = np.linalg.norm(x, ord=1)
+                            k = np.exp(-dist/sigma)
+                            local += k
+                    
+    K[j] = local
+    
+    return K
+
+from tqdm import tqdm
+
+def get_local_symmetric_laplacian_kernel(X,Q,sigma, kernel = 'laplacian',n_jobs=-1):
+    '''
+    Calculates the symmetric kernel matrix using a local decomposition (sum of atomic kernels)
+    :param X: array of arrays containing the local representation matrices of N molecules
+    :type X: numpy array
+    :param Q: array of arrays containing the nuclear charges of molecules in the same order as X
+    :type Q: numpy array
+    :param kernel: type of local kernel, currently supported : Laplacian and Gaussian local kernels
+    :type kernel: string
+    :param n_jobs: number of cores over which the kernel generation will be parallelized. Default value is -1 which means all cores will be used
+    :type n_jobs: integer
+
+    :return: NxN symmetric kernel matrix
+    '''
+    n = X.shape[0]
+    pad = X.shape[1]
+    assert n == Q.shape[0], "Representation and nuclear charges shape mis-match"
+
+    K = np.zeros((n,n), dtype = np.float64)
+    K = Parallel(n_jobs=n_jobs)(delayed(local_symmetric_laplacian_kernel)(X, Q, sigma, pad, i, n) for i in tqdm(range(n)))
+
+    K = np.array(K)
+
+    return K+K.T
