@@ -6,6 +6,7 @@ root2,ipi=2**0.5,np.pi*1j
 half_rootpi=(np.pi**0.5)/2
 c1,c2,c3=4.08858*(10**12),(np.pi**0.5)/2,(np.pi**0.5)*np.exp(-0.25)*1j/4
 c4=-1j*(np.pi**0.5)*np.exp(-1/8)/(4*root2)
+a2b = 1.88973
 
 
 @numba.jit(nopython=True)
@@ -199,7 +200,7 @@ def normalize(A,normal='mean'):
 
 from joblib import Parallel, delayed
 
-def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=12,normalized='min-max',progress=False):
+def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,normalized='min-max',progress=False):
     """
     Generates the local MBDF representation arrays for a set of given molecules
 
@@ -230,14 +231,16 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
         pad = max([len(arr) for arr in nuclear_charges])
 
     charges=np.array([arr.astype(np.float64) for arr in nuclear_charges])
+    
+    coords, cutoff_r = a2b*coords, a2b*cutoff_r
 
     if progress==True:
 
         from tqdm import tqdm    
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood*1.88973,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in tqdm(list(zip(charges,coords))))
+        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in tqdm(list(zip(charges,coords))))
     
     else:
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood*1.88973,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in zip(charges,coords))
+        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in zip(charges,coords))
     
     mbdf=np.array(mbdf)
     
