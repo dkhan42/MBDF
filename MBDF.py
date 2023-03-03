@@ -254,9 +254,9 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
 
 
 @numba.jit(nopython=True)
-def mKDE(rep,bin,bandwidth,kernel,scaling=False):
+def wKDE(rep,bin,bandwidth,kernel,scaling=False):
     """
-    returns the modified kernel density estimate for a given array and bins
+    returns the weighted kernel density estimate for a given array and bins
     """
     if kernel=='gaussian':
         if scaling=='root':
@@ -299,7 +299,7 @@ def density_estimate(reps,nuclear_charges,keys,bin,bandwidth,kernel='gaussian',s
                 ii = np.where(nuclear_charges[i] == k)[0]
 
                 if len(ii)!=0:
-                    big_rep[i,j*size:(j+1)*size]=mKDE(reps[i][ii]/k,bin,bandwidth,kernel,scaling)
+                    big_rep[i,j*size:(j+1)*size]=wKDE(reps[i][ii]/k,bin,bandwidth,kernel,scaling)
 
                 else:
                     big_rep[i,j*size:(j+1)*size]=np.zeros(size)
@@ -342,7 +342,6 @@ def generate_DF(mbdf,nuclear_charges,bw=0.07,binsize=0.2,kernel='gaussian'):
 @numba.jit(nopython=True)
 def generate_CM(cood,charges,pad):
     size=len(charges)
-    #arr=np.zeros(int(pad**2))
     cm=np.zeros((pad,pad))
     for i in range(size):
         for j in range(size):
@@ -425,56 +424,204 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                     bob.extend(np.zeros((asize[keys[i]]*asize[keys[j]])))
     return np.array(bob) 
 
-@numba.jit(nopython=True)
-def local_symmetric_laplacian_kernel(X, Q, sigma, pad, i, n):
-    K = np.zeros(n, dtype = np.float64)
+from scipy.spatial.distance import cityblock, euclidean
+from scipy.stats import wasserstein_distance
 
-    for j in range(i,n):
+def get_delta_local_kernel(A,B,Q1,Q2,sigma,kernel='laplacian'):
+    
+    n1, n2 = A.shape[0], B.shape[0]
 
-        if i == j:
-            local = 0.5
-        else:
-            local = 0.0
-            
-            for m in range(pad):
-                q1 = Q[i][m]
-                if q1 == 0.0:
-                    break
-                else:
-                    for l in range(pad):
-                        if q1 == Q[j][l] :
-                            x = X[i][m]-X[j][l]
-                            dist = np.linalg.norm(x, ord=1)
-                            k = np.exp(-dist/sigma)
-                            local += k
-                    
-    K[j] = local
+    assert n1 == Q1.shape[0], "charges and representation array length mis-match"
+    assert n2 == Q2.shape[0], "charges and representation array length mis-match"
+
+    K = 0
+    
+    if kernel == 'laplacian':
+
+        for i in range(n1):
+            k=0
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = cityblock(A[i],B[j])
+                    k += np.exp(-dist/sigma)
+            K += k
+
+    elif kernel == 'gaussian':
+
+        for i in range(n1):
+            k=0
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = euclidean(A[i],B[j])
+                    k += np.exp(-dist/sigma)
+            K += k
+
+    elif kernel == 'wasserstein':
+
+        for i in range(n1):
+            k=0
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = wasserstein_distance(A[i],B[j])
+                    k += np.exp(-dist/sigma)
+            K += k
     
     return K
 
-from tqdm import tqdm
+def get_min_local_kernel(A,B,Q1,Q2,sigma,kernel='laplacian'):
+    
+    n1, n2 = A.shape[0], B.shape[0]
 
-def get_local_symmetric_laplacian_kernel(X,Q,sigma, kernel = 'laplacian',n_jobs=-1):
-    '''
-    Calculates the symmetric kernel matrix using a local decomposition (sum of atomic kernels)
-    :param X: array of arrays containing the local representation matrices of N molecules
-    :type X: numpy array
-    :param Q: array of arrays containing the nuclear charges of molecules in the same order as X
-    :type Q: numpy array
-    :param kernel: type of local kernel, currently supported : Laplacian and Gaussian local kernels
-    :type kernel: string
-    :param n_jobs: number of cores over which the kernel generation will be parallelized. Default value is -1 which means all cores will be used
-    :type n_jobs: integer
+    assert n1 == Q1.shape[0], "charges and representation array length mis-match"
+    assert n2 == Q2.shape[0], "charges and representation array length mis-match"
 
-    :return: NxN symmetric kernel matrix
-    '''
-    n = X.shape[0]
-    pad = X.shape[1]
-    assert n == Q.shape[0], "Representation and nuclear charges shape mis-match"
+    K1, K2 = 0, 0
+    
+    if kernel == 'laplacian':
 
-    K = np.zeros((n,n), dtype = np.float64)
-    K = Parallel(n_jobs=n_jobs)(delayed(local_symmetric_laplacian_kernel)(X, Q, sigma, pad, i, n) for i in tqdm(range(n)))
+        for i in range(n1):
+            k= []
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
 
-    K = np.array(K)
+                if q1==q2:
+                    dist = cityblock(A[i],B[j])
+                    k.append(np.exp(-dist/sigma))
+            K1 += max(k)
+        for i in range(n2):
+            k= []
+            for j in range(n1):
+                q1, q2 = Q1[j], Q2[i]
 
-    return K+K.T
+                if q1==q2:
+                    dist = cityblock(A[j],B[i])
+                    k.append(np.exp(-dist/sigma))
+            K2 += max(k)
+        return min([K1,K2])
+
+    elif kernel == 'gaussian':
+
+        for i in range(n1):
+            k= []
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = euclidean(A[i],B[j])
+                    k.append(np.exp(-dist/sigma))
+            K1 += max(k)
+        for i in range(n2):
+            k= []
+            for j in range(n1):
+                q1, q2 = Q1[j], Q2[i]
+
+                if q1==q2:
+                    dist = euclidean(A[j],B[i])
+                    k.append(np.exp(-dist/sigma))
+            K2 += max(k)
+        return min([K1,K2])
+
+    elif kernel == 'wasserstein':
+
+        for i in range(n1):
+            k= []
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = wasserstein_distance(A[i],B[j])
+                    k.append(np.exp(-dist/sigma))
+            K1 += max(k)
+        for i in range(n2):
+            k= []
+            for j in range(n1):
+                q1, q2 = Q1[j], Q2[i]
+
+                if q1==q2:
+                    dist = wasserstein_distance(A[j],B[i])
+                    k.append(np.exp(-dist/sigma))
+            K2 += max(k)
+
+        return min([K1,K2])
+
+def get_max_local_kernel(A,B,Q1,Q2,sigma,kernel='laplacian'):
+    
+    n1, n2 = A.shape[0], B.shape[0]
+
+    assert n1 == Q1.shape[0], "charges and representation array length mis-match"
+    assert n2 == Q2.shape[0], "charges and representation array length mis-match"
+
+    K1, K2 = 0, 0
+    
+    if kernel == 'laplacian':
+
+        for i in range(n1):
+            k= []
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = cityblock(A[i],B[j])
+                    k.append(np.exp(-dist/sigma))
+            K1 += max(k)
+        for i in range(n2):
+            k= []
+            for j in range(n1):
+                q1, q2 = Q1[j], Q2[i]
+
+                if q1==q2:
+                    dist = cityblock(A[j],B[i])
+                    k.append(np.exp(-dist/sigma))
+            K2 += max(k)
+        return max([K1,K2])
+
+    elif kernel == 'gaussian':
+
+        for i in range(n1):
+            k= []
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = euclidean(A[i],B[j])
+                    k.append(np.exp(-dist/sigma))
+            K1 += max(k)
+        for i in range(n2):
+            k= []
+            for j in range(n1):
+                q1, q2 = Q1[j], Q2[i]
+
+                if q1==q2:
+                    dist = euclidean(A[j],B[i])
+                    k.append(np.exp(-dist/sigma))
+            K2 += max(k)
+        return max([K1,K2])
+
+    elif kernel == 'wasserstein':
+
+        for i in range(n1):
+            k= []
+            for j in range(n2):
+                q1, q2 = Q1[i], Q2[j]
+
+                if q1==q2:
+                    dist = wasserstein_distance(A[i],B[j])
+                    k.append(np.exp(-dist/sigma))
+            K1 += max(k)
+        for i in range(n2):
+            k= []
+            for j in range(n1):
+                q1, q2 = Q1[j], Q2[i]
+
+                if q1==q2:
+                    dist = wasserstein_distance(A[j],B[i])
+                    k.append(np.exp(-dist/sigma))
+            K2 += max(k)
+
+        return max([K1,K2])
