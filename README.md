@@ -29,7 +29,7 @@ It is recommended that the MBDF arrays be generated for the entire dataset (trai
 
 To generate the **global** Density of functionals representation the MBDF array is required :
 ```
-from mbdf import generate_DF
+from mbdf import generate_df
 rep = generate_df(mbdf, charges)
 ```
 Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
