@@ -14,8 +14,8 @@ If a progress bar is desired during the representation generation then the `tqdm
 # Usage
 To generate the **local** MBDF representation for your entire dataset:
 ```
-import MBDF
-rep = MBDF.generate_mbdf(charges, coordinates, n_jobs)
+from MBDF import generate_mbdf
+rep = generate_mbdf(charges, coordinates, n_jobs)
 ```
 Where `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset. Likewise, `coordinates` should be an array containing lists (or arrays) of atomic coordinates for all molecules. 
 \
@@ -29,7 +29,7 @@ It is recommended that the MBDF arrays be generated for the entire dataset (trai
 
 To generate the **global** Density of functionals representation the MBDF array is required :
 ```
-import MBDF
-rep = MBDF.generate_DF(mbdf, charges)
+from mbdf import generate_DF
+rep = generate_df(mbdf, charges)
 ```
 Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
