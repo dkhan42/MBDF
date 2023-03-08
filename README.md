@@ -19,7 +19,8 @@ rep = generate_mbdf(charges, coordinates, n_jobs)
 ```
 Where `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset. Likewise, `coordinates` should be an array containing lists (or arrays) of atomic coordinates for all molecules. 
 \
-Note : The atomic coordinates should be in Angstrom. The representation hyperparameters were optimized in Bohr so the function automatically converts the coordinates from Angstrom to Bohr. The default local cutoff used is 8 Angstroms.
+
+Note : The atomic coordinates should be provided in Angstrom.
 
 The `n_jobs` parameter controls the number of cores over which the representation generation will be parallelized. Default value is `-1` which means all cores in the system will be used.
 
