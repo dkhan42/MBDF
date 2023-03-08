@@ -307,7 +307,7 @@ def density_estimate(reps,nuclear_charges,keys,bin,bandwidth,kernel='gaussian',s
     return big_rep
 
 
-def generate_DF(mbdf,nuclear_charges,bw=0.07,binsize=0.2,kernel='gaussian'):
+def generate_df(mbdf,nuclear_charges,bw=0.07,binsize=0.2,kernel='gaussian'):
     """
     Generates the Density of Functionals representation for a given set of molecules. Requires their MBDF arrays as input
     
