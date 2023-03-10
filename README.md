@@ -33,3 +33,4 @@ from mbdf import generate_df
 rep = generate_df(mbdf, charges)
 ```
 Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
+The `binsize` keyword controls the grid-spacing used for discretizing the density function. The default value is 0.2 but this can be lowered if a higher resolution is required. It makes the representation perform better but increases its size.
