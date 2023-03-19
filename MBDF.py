@@ -232,6 +232,14 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
 
     charges=np.array([arr.astype(np.float64) for arr in nuclear_charges])
     
+    assert charges.shape[0] == coords.shape[0], "charges and coordinates array length mis-match"
+    
+    for i in range(len(charges)):
+        
+        q, r = charges[i], coords[i]
+        
+        assert q.shape[0] == r.shape[0], "charges and coordinates array length mis-match for molecule " + str(i)
+    
     coords, cutoff_r = a2b*coords, a2b*cutoff_r
 
     if progress_bar==True:
