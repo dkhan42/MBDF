@@ -15,7 +15,7 @@ If a progress bar is desired during the representation generation then the `tqdm
 To generate the **local** MBDF representation for your entire dataset:
 ```
 from MBDF import generate_mbdf
-rep = generate_mbdf(charges, coordinates, n_jobs)
+rep = generate_mbdf(charges, coordinates)
 ```
 Where `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset. Likewise, `coordinates` should be an array containing lists (or arrays) of atomic coordinates for all molecules. 
 
