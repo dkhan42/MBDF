@@ -200,7 +200,7 @@ def normalize(A,normal='mean'):
 
 from joblib import Parallel, delayed
 
-def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,normalized='min-max',progress=False):
+def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,normalized='min-max',progress_bar=False):
     """
     Generates the local MBDF representation arrays for a set of given molecules
 
@@ -234,7 +234,7 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     
     coords, cutoff_r = a2b*coords, a2b*cutoff_r
 
-    if progress==True:
+    if progress_bar==True:
 
         from tqdm import tqdm    
         mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in tqdm(list(zip(charges,coords))))
