@@ -8,7 +8,6 @@ c1,c2,c3=4.08858*(10**12),(np.pi**0.5)/2,(np.pi**0.5)*np.exp(-0.25)*1j/4
 c4=-1j*(np.pi**0.5)*np.exp(-1/8)/(4*root2)
 a2b = 1.88973
 
-
 @numba.jit(nopython=True)
 def erfunc(z):
     t = 1.0 / (1.0 + 0.5 * np.abs(z))
