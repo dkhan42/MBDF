@@ -42,7 +42,7 @@ def hermite_polynomial(x,degree,a=1):
 
 
 @numba.jit(nopython=True)
-def generate_data(size,z,atom,charges,coods,cutoff_r=12):
+def generate_data(size,z,atom,charges,coods,cutoff_r=12,angular_scaling=4):
     """
     returns 2 and 3-body internal coordinates
     """
@@ -63,22 +63,25 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12):
                 if j!=k:
                     rik=atom-coods[k]
                     rik_norm=np.linalg.norm(rik)
+
                     if rik_norm!=0 and rik_norm<cutoff_r:
                         z3=charges[k]**0.8
+                        
                         rkj=coods[k]-coods[j]
+                        
                         rkj_norm=np.linalg.norm(rkj)
                         
                         threeb[j][k][0] = np.minimum(1.0,np.maximum(np.dot(rij,rik)/(rij_norm*rik_norm),-1.0))
                         threeb[j][k][1] = np.minimum(1.0,np.maximum(np.dot(rij,rkj)/(rij_norm*rkj_norm),-1.0))
                         threeb[j][k][2] = np.minimum(1.0,np.maximum(np.dot(-rkj,rik)/(rkj_norm*rik_norm),-1.0))
                         
-                        atm = (rij_norm*rik_norm*rkj_norm)**4
+                        atm = (rij_norm*rik_norm*rkj_norm)**angular_scaling
+                        
                         charge = z1*z2*z3
                         
                         threeb[j][k][3:] =  atm, charge
 
     return twob, threeb                        
-
 
 @numba.jit(nopython=True)
 def angular_integrals(size,threeb,alength=158,a=2,grid1=None,grid2=None):
@@ -96,12 +99,17 @@ def angular_integrals(size,threeb,alength=158,a=2,grid1=None,grid2=None):
         for j in range(size):
 
             for k in range(size):
+
                 if threeb[j][k][-1]!=0:
+                    
                     angle1,angle2,angle3,atm,charge=threeb[j][k]
 
                     x=theta-np.arccos(angle1)
+
                     exponent,h1=np.exp(-a*x**2),hermite_polynomial(x,1,a)
-                    f1+=(charge*exponent*num1)/atm ##angular
+                    
+                    f1+=(charge*exponent*num1)/atm 
+                    
                     f2+=(charge*h1*exponent*(1+(num2*angle1*angle2*angle3)))/atm 
         
         arr[i]=f1,f2
@@ -133,13 +141,18 @@ def radial_integrals(size,rlength,twob,step_r,a=1,normalized=False):
                 if normalized==True:
                     norm=(erfunc(dist)+1)*half_rootpi
                     exponent=np.exp(-a*(x)**2)/norm
+                
                 else:
                     exponent=np.exp(-a*(x)**2)
 
                 h1,h2=hermite_polynomial(x,1,a),hermite_polynomial(x,2,a)
+                
                 f1+=charge*exponent*np.exp(-10.8*r)
+                
                 f2+=charge*exponent/(2.2508*(r+1)**3)
+                
                 f3+=charge*(h1*exponent)/(2.2508*(r+1)**6)
+                
                 f4+=charge*h2*exponent*np.exp(-1.5*r) 
         
         r+=step_r
@@ -148,6 +161,38 @@ def radial_integrals(size,rlength,twob,step_r,a=1,normalized=False):
     trapz=[np.trapz(arr[:,i],dx=step_r) for i in range(arr.shape[1])]
 
     return trapz
+
+
+@numba.jit(nopython=True)
+def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutoff_r=12,angular_scaling=4):
+    """
+    returns the local MBDF representation for a molecule
+    """
+    size = len(charges)
+    mat=np.zeros((pad,6))
+    
+    if size>2:
+        for i in range(size):
+
+            twob,threeb = generate_data(size,charges[i],coods[i],charges,coods,cutoff_r,angular_scaling)
+
+            mat[i][:4] = radial_integrals(size,rlength,twob,step_r)     
+
+            mat[i][4:] = angular_integrals(size,threeb,alength,grid1=grid1,grid2=grid2)
+
+    elif size==2:
+        z1, z2, rij = charges[0]**0.8, charges[1]**0.8, coods[0]-coods[1]
+        
+        pref, dist = z1*z2, np.linalg.norm(rij)
+        
+        twob = np.array([[pref, dist], [pref, dist]])
+        
+        mat[i][:4] = radial_integrals(size,rlength,twob,step_r)
+
+    else:
+        mat[0,0] = charges[0]**2.33
+
+    return mat
 
 
 @numba.jit(nopython=True)
@@ -163,23 +208,6 @@ def fourier_grid():
 
 
 @numba.jit(nopython=True)
-def mbdf_local(charges,coods,grid1,grid2,rlength,pad=29,step_r=0.1,cutoff_r=12):
-    """
-    returns the local MBDF representation for a molecule
-    """
-    size = len(charges)
-    mat=np.zeros((pad,6))
-    
-    for i in range(size):
-        twob,threeb = generate_data(size,charges[i],coods[i],charges,coods,cutoff_r)
-
-        mat[i][:4] = radial_integrals(size,rlength,twob,step_r)        
-        mat[i][4:] = angular_integrals(size,threeb,grid1=grid1,grid2=grid2)
-
-    return mat
-
-
-@numba.jit(nopython=True)
 def normalize(A,normal='mean'):
     """
     normalizes the functionals based on the given method
@@ -189,18 +217,32 @@ def normalize(A,normal='mean'):
     
     if normal=='mean':
         for i in range(A.shape[2]):
-            A_temp[:,:,i] = A[:,:,i]/np.mean(A[:,:,i])
+            
+            avg = np.mean(A[:,:,i])
+
+            if avg!=0.0:
+                A_temp[:,:,i] = A[:,:,i]/avg
+            
+            else:
+                pass
    
     elif normal=='min-max':
         for i in range(A.shape[2]):
-            A_temp[:,:,i] = A[:,:,i]/np.abs(np.max(A[:,:,i])-np.min(A[:,:,i]))
+            
+            diff = np.abs(np.max(A[:,:,i])-np.min(A[:,:,i]))
+            
+            if diff!=0.0:
+                A_temp[:,:,i] = A[:,:,i]/diff
+            
+            else:
+                pass
     
     return A_temp
 
 
 from joblib import Parallel, delayed
 
-def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,normalized='min-max',progress_bar=False):
+def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=4,normalized='min-max',progress_bar=False):
     """
     Generates the local MBDF representation arrays for a set of given molecules
 
@@ -213,42 +255,54 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     :type n_jobs: integer
     :param pad: Number of atoms in the largest molecule in the dataset. Can be left to None and the function will calculate it using the nuclear_charges array
     :type pad: integer
-    :param step_r: radial step length in Bohr
+    :param step_r: radial step length in Angstrom
     :type step_r: float
     :param cutoff_r: local radial cutoff distance for each atom
     :type cutoff_r: float
+    :param step_a: angular step length in Radians
+    :type step_a: float
+    :param angular_scaling: scaling of the inverse distance weighting used in the angular functionals
+    :type : float
     :param normalized: type of normalization to be applied to the functionals
     :type : string
     :param progress: displays a progress bar for representation generation process. Requires the tqdm library
     :type progress: Bool
-    
+
     :return: NxPadx6 array containing Padx6 dimensional MBDF matrices for the N molecules
     """
-    rlength = int(cutoff_r/step_r)+1
-    grid1,grid2 = fourier_grid()
+    assert nuclear_charges.shape[0] == coords.shape[0], "charges and coordinates array length mis-match"
+    
+    lengths, charges = [], []
+
+    for i in range(len(nuclear_charges)):
+        
+        q, r = nuclear_charges[i], coords[i]
+        
+        assert q.shape[0] == r.shape[0], "charges and coordinates array length mis-match for molecule at index" + str(i)
+
+        lengths.append(len(q))
+
+        charges.append(q.astype(np.float64))
 
     if pad==None:
-        pad = max([len(arr) for arr in nuclear_charges])
+        pad = max(lengths)
 
-    charges=np.array([arr.astype(np.float64) for arr in nuclear_charges])
-    
-    assert charges.shape[0] == coords.shape[0], "charges and coordinates array length mis-match"
-    
-    for i in range(len(charges)):
-        
-        q, r = charges[i], coords[i]
-        
-        assert q.shape[0] == r.shape[0], "charges and coordinates array length mis-match for molecule " + str(i)
+    charges = np.array(charges)
+
+    rlength = int(cutoff_r/step_r) + 1
+    alength = int(np.pi/step_a) + 1
+
+    grid1,grid2 = fourier_grid()
     
     coords, cutoff_r = a2b*coords, a2b*cutoff_r
 
     if progress_bar==True:
 
         from tqdm import tqdm    
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in tqdm(list(zip(charges,coords))))
+        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,alength,pad,step_r,cutoff_r,angular_scaling) for charge,cood in tqdm(list(zip(charges,coords))))
     
     else:
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,pad,step_r,cutoff_r) for charge,cood in zip(charges,coords))
+        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,alength,pad,step_r,cutoff_r,angular_scaling) for charge,cood in zip(charges,coords))
     
     mbdf=np.array(mbdf)
     
@@ -269,25 +323,35 @@ def wKDE(rep,bin,bandwidth,kernel,scaling=False):
     if kernel=='gaussian':
         if scaling=='root':
             a = bin.reshape(-1,1)-rep
+            
             basis = np.exp(-(a**2)/bandwidth)
+            
             k = (np.sqrt(np.abs(rep)))*basis
+            
             return np.sum(k,axis=1)
 
         else:
             a = bin.reshape(-1,1)-rep
+            
             basis = np.exp(-(a**2)/bandwidth)
+            
             return np.sum(basis,axis=1)
 
     elif kernel=='laplacian':
         if scaling=='root':
             a = bin.reshape(-1,1)-rep
+            
             basis = np.exp(-(np.abs(a))/bandwidth)
+            
             k = (np.abs(rep))*basis
+            
             return np.sum(k,axis=1)
 
         else:
             a = bin.reshape(-1,1)-rep
+            
             basis = np.exp(-(np.abs(a))/bandwidth)
+            
             return np.sum(basis,axis=1)
 
 
@@ -343,8 +407,10 @@ def generate_df(mbdf,nuclear_charges,bw=0.07,binsize=0.2,kernel='gaussian'):
     gridsize=len(keys)*len(bin)
     
     kde=np.zeros((mbdf.shape[0],gridsize*fs))
+    
     for i in range(fs):
         kde[:,i*gridsize:(i+1)*gridsize]=density_estimate(reps[i],nuclear_charges,keys,bin,bw,kernel)
+    
     return kde
 
 @numba.jit(nopython=True)
