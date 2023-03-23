@@ -8,6 +8,7 @@ c1,c2,c3=4.08858*(10**12),(np.pi**0.5)/2,(np.pi**0.5)*np.exp(-0.25)*1j/4
 c4=-1j*(np.pi**0.5)*np.exp(-1/8)/(4*root2)
 a2b = 1.88973
 
+
 @numba.jit(nopython=True)
 def erfunc(z):
     t = 1.0 / (1.0 + 0.5 * np.abs(z))
@@ -41,7 +42,7 @@ def hermite_polynomial(x,degree,a=1):
 
 
 @numba.jit(nopython=True)
-def generate_data(size,z,atom,charges,coods,cutoff_r=12,angular_scaling=4):
+def generate_data(size,z,atom,charges,coods,cutoff_r=12):
     """
     returns 2 and 3-body internal coordinates
     """
@@ -74,7 +75,7 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12,angular_scaling=4):
                         threeb[j][k][1] = np.minimum(1.0,np.maximum(np.dot(rij,rkj)/(rij_norm*rkj_norm),-1.0))
                         threeb[j][k][2] = np.minimum(1.0,np.maximum(np.dot(-rkj,rik)/(rkj_norm*rik_norm),-1.0))
                         
-                        atm = (rij_norm*rik_norm*rkj_norm)**angular_scaling
+                        atm = rij_norm*rik_norm*rkj_norm
                         
                         charge = z1*z2*z3
                         
@@ -83,7 +84,7 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12,angular_scaling=4):
     return twob, threeb                        
 
 @numba.jit(nopython=True)
-def angular_integrals(size,threeb,alength=158,a=2,grid1=None,grid2=None):
+def angular_integrals(size,threeb,alength=158,a=2,grid1=None,grid2=None,angular_scaling=2.4):
     """
     evaluates the 3-body functionals using the trapezoidal rule
     """
@@ -107,9 +108,9 @@ def angular_integrals(size,threeb,alength=158,a=2,grid1=None,grid2=None):
 
                     exponent,h1=np.exp(-a*x**2),hermite_polynomial(x,1,a)
                     
-                    f1+=(charge*exponent*num1)/atm 
+                    f1+=(charge*exponent*num1)/(atm**4)
                     
-                    f2+=(charge*h1*exponent*(1+(num2*angle1*angle2*angle3)))/atm 
+                    f2+=(charge*h1*exponent*(1+(num2*angle1*angle2*angle3)))/(atm**angular_scaling)
         
         arr[i]=f1,f2
         theta+=0.02
@@ -163,7 +164,7 @@ def radial_integrals(size,rlength,twob,step_r,a=1,normalized=False):
 
 
 @numba.jit(nopython=True)
-def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutoff_r=12,angular_scaling=4):
+def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutoff_r=12,angular_scaling=2.4):
     """
     returns the local MBDF representation for a molecule
     """
@@ -173,11 +174,11 @@ def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutof
     if size>2:
         for i in range(size):
 
-            twob,threeb = generate_data(size,charges[i],coods[i],charges,coods,cutoff_r,angular_scaling)
+            twob,threeb = generate_data(size,charges[i],coods[i],charges,coods,cutoff_r)
 
             mat[i][:4] = radial_integrals(size,rlength,twob,step_r)     
 
-            mat[i][4:] = angular_integrals(size,threeb,alength,grid1=grid1,grid2=grid2)
+            mat[i][4:] = angular_integrals(size,threeb,alength,grid1=grid1,grid2=grid2,angular_scaling=angular_scaling)
 
     elif size==2:
         z1, z2, rij = charges[0]**0.8, charges[1]**0.8, coods[0]-coods[1]
@@ -241,7 +242,7 @@ def normalize(A,normal='mean'):
 
 from joblib import Parallel, delayed
 
-def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=4,normalized='min-max',progress_bar=False):
+def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=2.4,normalized='min-max',progress_bar=False):
     """
     Generates the local MBDF representation arrays for a set of given molecules
 
