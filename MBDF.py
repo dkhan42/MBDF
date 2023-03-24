@@ -242,7 +242,7 @@ def normalize(A,normal='mean'):
 
 from joblib import Parallel, delayed
 
-def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=2.4,normalized='min-max',progress_bar=False):
+def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=4,normalized='min-max',progress_bar=False):
     """
     Generates the local MBDF representation arrays for a set of given molecules
 
