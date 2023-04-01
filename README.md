@@ -30,7 +30,6 @@ A progress bar for the representation generation process can be obtained by pass
 It is recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their maximum in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods. The normalization can be turned off using `normalized = False`
 
 \
-\
 
 * To generate the **global** Density of functionals representation the MBDF array is required :
 ```
