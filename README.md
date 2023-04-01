@@ -38,4 +38,4 @@ Where `mbdf` is the array containing the MBDF representation for all molecules i
 
 The `binsize` keyword controls the grid-spacing used for discretizing the density function. The default value is 0.2 but this can be lowered if a higher resolution is required. It makes the representation perform better but increases its size.
 
-The `bw` keyword controls the bandwidth hyperparameter of the representation. The default value is 0.07 but this should be screen once in the range `[0.01,1]` for new datasets and when changing the grid-spacing using the `binsize` parameter.
+The `bw` keyword controls the bandwidth hyperparameter of the representation. The default value is 0.07 but this should be screened once in the range `[0.01,1]` for new datasets and when changing the grid-spacing using the `binsize` parameter.
