@@ -19,17 +19,17 @@ rep = generate_mbdf(charges, coordinates)
 ```
 Where `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset. Likewise, `coordinates` should be an array containing lists (or arrays) of atomic coordinates for all molecules. 
 
-The local cutoff distance can be controlled using the `cutoff_r` keyword. The default value is 8 Å but this should be increased for larger molecules. This does not affect the representation size, kernel evualuation cost and only affects the representation generation cost.
-
 Note : The atomic coordinates should be provided in Angstrom.
+
+The `cutoff_r` keyword controls the local radial cutoff distance for all functionals. The default value is 8 Å but this should be increased for larger molecules. This does not affect the representation size, kernel evualuation cost and only affects the representation generation cost.
 
 The `n_jobs` parameter controls the number of cores over which the representation generation will be parallelized. Default value is `-1` which means all cores in the system will be used.
 
-A progress bar for the representation generation process can be obtained by passing the parameter `progress_bar = True` to the function above. This requires the `tqdm` library.
+`progress_bar = True` can be used to obtain a progress bar during the representation generation process. This requires the `tqdm` library.
 
 It is recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their maximum in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods. The normalization can be turned off using `normalized = False`
 
-\
+
 
 * To generate the **global** Density of functionals representation the MBDF array is required :
 ```
