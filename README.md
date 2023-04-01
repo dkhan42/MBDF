@@ -12,7 +12,7 @@ Python libraries required :
 If a progress bar is desired during the representation generation then the `tqdm` library is also required.
 
 # Usage
-To generate the **local** MBDF representation for your entire dataset:
+* To generate the **local** MBDF representation for your entire dataset:
 ```
 from MBDF import generate_mbdf
 rep = generate_mbdf(charges, coordinates)
@@ -29,7 +29,9 @@ A progress bar for the representation generation process can be obtained by pass
 
 It is recommended that the MBDF arrays be generated for the entire dataset (train & test) together since the functional values are normalized w.r.t their maximum in the dataset. This makes hyperparameter selection (length scales) easier when using Kernel based methods. The normalization can be turned off using `normalized = False`
 
-To generate the **global** Density of functionals representation the MBDF array is required :
+
+
+* To generate the **global** Density of functionals representation the MBDF array is required :
 ```
 from MBDF import generate_df
 rep = generate_df(mbdf, charges)
