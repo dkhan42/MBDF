@@ -35,7 +35,7 @@ It is recommended that the MBDF arrays be generated for the entire dataset (trai
 ```
 from MBDF import generate_mbdf, generate_df
 mbdf = generate_mbdf(charges, coordinates)
-rep = generate_df(mbdf, charges)
+df = generate_df(mbdf, charges)
 ```
 Where `mbdf` is the array containing the MBDF representation for all molecules in the dataset and `charges` is an array containing lists (or arrays) of nuclear charges for all molecules in the dataset.
 
