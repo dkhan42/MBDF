@@ -26,19 +26,27 @@ def erfunc(z):
 
 
 @numba.jit(nopython=True)
-def hermite_polynomial(x,degree,a=1):
-    if degree==1:
+def hermite_polynomial(x, degree, a=1):
+    if degree == 0:
+        return 1
+    elif degree == 1:
         return -2*a*x
-    elif degree==2:
-        x1=(a*x)**2
-        return 4*x1-(2*a)
-    elif degree==3:
-        x1=(a*x)**3
-        return -8*x1-(12*a*x)
-    elif degree==4:
-        x1=x**4
-        x2=x**2
-        return 16*x1-(48*x2)+12
+    elif degree == 2:
+        x1 = (a*x)**2
+        return 4*x1 - 2*a
+    elif degree == 3:
+        x1 = (a*x)**3
+        return -8*x1 - 12*a*x
+    elif degree == 4:
+        x1 = (a*x)**4
+        x2 = (a*x)**2
+        return 16*x1 - 48*x2 + 12*a**2
+    else:
+        result = 0
+        for k in range(degree//2 + 1):
+            result += (-1)**k * np.math.factorial(degree) / (np.math.factorial(k) *
+                        np.math.factorial(degree - 2*k)) * (2*a*x)**(degree - 2*k)
+        return result
 
 
 @numba.jit(nopython=True)
