@@ -45,3 +45,4 @@ The `bw` keyword controls the bandwidth hyperparameter of the representation. Th
 
 # Kernels
 * For MBDF it is recommended to use the `get_local_symmetric_kernel_mbdf` and `get_local_kernel_mbdf` available at the qmlcode fork : https://github.com/dkhan42/qml2/tree/develop
+* Wrappers for training KRR models using qmlcode and examples for using these scripts are available at : https://github.com/dkhan42/QML
