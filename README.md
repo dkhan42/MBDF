@@ -21,7 +21,7 @@ Where `charges` is an array containing lists (or arrays) of nuclear charges for 
 
 Note : The atomic coordinates should be provided in Angstrom.
 
-The `cutoff_r` keyword controls the local radial cutoff distance for all functionals. The default value is 8 Å but this should be increased for larger molecules. This does not affect the representation size, kernel evualuation cost and only affects the representation generation cost.
+The `cutoff_r` keyword controls the local radial cutoff distance for all functionals. The default value is 8 Å.
 
 The `n_jobs` parameter controls the number of cores over which the representation generation will be parallelized. Default value is `-1` which means all cores in the system will be used.
 
