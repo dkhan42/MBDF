@@ -265,7 +265,7 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     :type step_a: float
     :param angular_scaling: scaling of the inverse distance weighting used in the angular functionals
     :type : float
-    :param normalized: type of normalization to be applied to the functionals
+    :param normalized: type of normalization to be applied to the functionals. Available options are 'min-max' and 'mean'. Can be turned off by passing False
     :type : string
     :param progress: displays a progress bar for representation generation process. Requires the tqdm library
     :type progress: Bool
