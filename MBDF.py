@@ -197,6 +197,47 @@ def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutof
     return mat
 
 
+def mbdf_global(charges,coods,asize,rep_size,keys,grid1,grid2,rlength,alength,step_r=0.1,cutoff_r=12,angular_scaling=2.4):
+    """
+    returns the flattened, bagged MBDF feature vector for a molecule
+    """
+    elements = {k:[[],k] for k in keys}
+
+    size = len(charges)
+
+    for i in range(size):
+        elements[charges[i]][0].append(coods[i])
+
+    mat, ind = np.zeros((rep_size,6)), 0
+
+    if size>2:
+
+        for key in keys:
+            
+            num = len(elements[key][0])
+            
+            if num!=0:
+                bags = np.zeros((num,6))
+                
+                for j in range(num):
+                    twob,threeb = generate_data(size,key,elements[key][0][j],charges,coods,cutoff_r)
+
+                    bags[j][:4] = radial_integrals(size,rlength,twob,step_r)     
+
+                    bags[j][4:] = angular_integrals(size,threeb,alength,grid1=grid1,grid2=grid2,angular_scaling=angular_scaling)
+
+                
+                mat[ind:ind+num] = -np.sort(-bags,axis=0)
+                
+            ind += asize[key]
+    
+    #else:
+
+        #todo
+
+    return mat
+                        
+
 @numba.jit(nopython=True)
 def fourier_grid():
     
@@ -244,7 +285,7 @@ def normalize(A,normal='mean'):
 
 from joblib import Parallel, delayed
 
-def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=4,normalized='min-max',progress_bar=False):
+def generate_mbdf(nuclear_charges,coords,local=True,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=8.0,step_a=0.02,angular_scaling=4,normalized='min-max',progress_bar=False):
     """
     Generates the local MBDF representation arrays for a set of given molecules
 
@@ -298,23 +339,55 @@ def generate_mbdf(nuclear_charges,coords,n_jobs=-1,pad=None,step_r=0.1,cutoff_r=
     
     coords, cutoff_r = a2b*coords, a2b*cutoff_r
 
-    if progress_bar==True:
+    if local:
+        if progress_bar==True:
 
-        from tqdm import tqdm    
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,alength,pad,step_r,cutoff_r,angular_scaling) for charge,cood in tqdm(list(zip(charges,coords))))
-    
-    else:
-        mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,alength,pad,step_r,cutoff_r,angular_scaling) for charge,cood in zip(charges,coords))
-    
-    mbdf=np.array(mbdf)
-    
-    if normalized==False:
+            from tqdm import tqdm    
+            mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,alength,pad,step_r,cutoff_r,angular_scaling) for charge,cood in tqdm(list(zip(charges,coords))))
+
+        else:
+            mbdf = Parallel(n_jobs=n_jobs)(delayed(mbdf_local)(charge,cood,grid1,grid2,rlength,alength,pad,step_r,cutoff_r,angular_scaling) for charge,cood in zip(charges,coords))
+
+        mbdf=np.array(mbdf)
+
+        if normalized==False:
+
+            return mbdf
+
+        else:
+
+            return normalize(mbdf,normal=normalized)
         
-        return mbdf
-    
     else:
-        
-        return normalize(mbdf,normal=normalized)
+        keys = np.unique(np.concatenate(charges))
+
+        asize = {key:max([(mol == key).sum() for mol in charges]) for key in keys}
+
+        rep_size = sum(asize.values())
+
+        if progress_bar==True:
+
+            from tqdm import tqdm    
+            arr = Parallel(n_jobs=n_jobs)(delayed(mbdf_global)(charge,cood,asize,rep_size,keys,grid1,grid2,rlength,alength,step_r,cutoff_r,angular_scaling) for charge,cood in tqdm(list(zip(charges,coords))))
+
+        else:
+            arr = Parallel(n_jobs=n_jobs)(delayed(mbdf_global)(charge,cood,asize,rep_size,keys,grid1,grid2,rlength,alength,step_r,cutoff_r,angular_scaling) for charge,cood in zip(charges,coords))
+
+        arr = np.array(arr)
+
+        if normalized==False:
+
+            mbdf = np.array([mat.ravel(order='F') for mat in arr])
+            
+            return mbdf
+
+        else:
+
+            arr = normalize(arr,normal=normalized)
+
+            mbdf = np.array([mat.ravel(order='F') for mat in arr])
+            
+            return mbdf
 
 
 @numba.jit(nopython=True)
@@ -464,40 +537,40 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
         elements[atoms[i]][0].append(coods[i])
     bob=[]
     for i in range(len(keys)):
-        num=len(elements[keys[i]][0])
+        num=len(elements[key][0])
         if num!=0:
-            bag=np.zeros((asize[keys[i]]))
-            bag[:num]=0.5*(elements[keys[i]][1]**2.4)
+            bag=np.zeros((asize[key]))
+            bag[:num]=0.5*(elements[key][1]**2.4)
             bag=-np.sort(-bag)
             bob.extend(bag)
             for j in range(i,len(keys)):
                 if i==j:
-                    z=elements[keys[i]][1]
-                    bag=np.zeros((comb(asize[keys[i]],2)))
+                    z=elements[key][1]
+                    bag=np.zeros((comb(asize[key],2)))
                     vec=[]
-                    for (r1,r2) in combinations(elements[keys[i]][0],2):
+                    for (r1,r2) in combinations(elements[key][0],2):
                         vec.append(z**2/np.linalg.norm(r1-r2))
                     bag[:len(vec)]=vec
                     bag=-np.sort(-bag)
                     bob.extend(bag)
                 elif (i!=j) and (len(elements[keys[j]][0])!=0):
-                    z1,z2=elements[keys[i]][1],elements[keys[j]][1]
-                    bag=np.zeros((asize[keys[i]]*asize[keys[j]]))
+                    z1,z2=elements[key][1],elements[keys[j]][1]
+                    bag=np.zeros((asize[key]*asize[keys[j]]))
                     vec=[]
-                    for (r1,r2) in product(elements[keys[i]][0],elements[keys[j]][0]):
+                    for (r1,r2) in product(elements[key][0],elements[keys[j]][0]):
                         vec.append(z1*z2/np.linalg.norm(r1-r2))
                     bag[:len(vec)]=vec
                     bag=-np.sort(-bag)
                     bob.extend(bag)
                 else:
-                    bob.extend(np.zeros((asize[keys[i]]*asize[keys[j]])))
+                    bob.extend(np.zeros((asize[key]*asize[keys[j]])))
         else:
-            bob.extend(np.zeros((asize[keys[i]])))
+            bob.extend(np.zeros((asize[key])))
             for j in range(i,len(keys)):
                 if i==j:
-                    bob.extend(np.zeros((comb(asize[keys[i]],2))))
+                    bob.extend(np.zeros((comb(asize[key],2))))
                 else:
-                    bob.extend(np.zeros((asize[keys[i]]*asize[keys[j]])))
+                    bob.extend(np.zeros((asize[key]*asize[keys[j]])))
     return np.array(bob) 
 
 from scipy.spatial.distance import cityblock, euclidean
