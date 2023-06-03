@@ -548,7 +548,7 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                     z=elements[key][1]
                     bag=np.zeros((comb(asize[key],2)))
                     vec=[]
-                    for (r1,r2) in combinations(elements[key][0],2):
+                    for r1,r2 in combinations(elements[key][0],2):
                         vec.append(z**2/np.linalg.norm(r1-r2))
                     bag[:len(vec)]=vec
                     bag=-np.sort(-bag)
@@ -557,7 +557,7 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                     z1,z2=elements[key][1],elements[keys[j]][1]
                     bag=np.zeros((asize[key]*asize[keys[j]]))
                     vec=[]
-                    for (r1,r2) in product(elements[key][0],elements[keys[j]][0]):
+                    for r1,r2 in product(elements[key][0],elements[keys[j]][0]):
                         vec.append(z1*z2/np.linalg.norm(r1-r2))
                     bag[:len(vec)]=vec
                     bag=-np.sort(-bag)
