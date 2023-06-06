@@ -556,7 +556,7 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
     for i in range(len(atoms)):
         elements[atoms[i]][0].append(coods[i])
     bob=[]
-    for i in range(len(keys)):
+    for key in keys:
         num=len(elements[key][0])
         if num!=0:
             bag=np.zeros((asize[key]))
