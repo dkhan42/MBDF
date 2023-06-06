@@ -173,6 +173,8 @@ def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutof
     size = len(charges)
     mat=np.zeros((pad,6))
     
+    assert size > 1, "No implementation for monoatomics"
+
     if size>2:
         for i in range(size):
 
@@ -189,10 +191,9 @@ def mbdf_local(charges,coods,grid1,grid2,rlength,alength,pad=29,step_r=0.1,cutof
         
         twob = np.array([[pref, dist], [pref, dist]])
         
-        mat[i][:4] = radial_integrals(size,rlength,twob,step_r)
+        mat[0][:4] = radial_integrals(size,rlength,twob,step_r)
 
-    else:
-        mat[0,0] = charges[0]**2.33
+        mat[1][:4] = mat[0][:4]
 
     return mat
 
@@ -210,6 +211,8 @@ def mbdf_global(charges,coods,asize,rep_size,keys,grid1,grid2,rlength,alength,st
 
     mat, ind = np.zeros((rep_size,6)), 0
 
+    assert size > 1, "No implementation for monoatomics"
+
     if size>2:
 
         for key in keys:
@@ -226,14 +229,31 @@ def mbdf_global(charges,coods,asize,rep_size,keys,grid1,grid2,rlength,alength,st
 
                     bags[j][4:] = angular_integrals(size,threeb,alength,grid1=grid1,grid2=grid2,angular_scaling=angular_scaling)
 
-                
                 mat[ind:ind+num] = -np.sort(-bags,axis=0)
                 
             ind += asize[key]
     
-    #else:
+    elif size == 2:
 
-        #todo
+        for key in keys:
+            
+            num = len(elements[key][0])
+            
+            if num!=0:
+                bags = np.zeros((num,6))
+                
+                for j in range(num):
+                    z1, z2, rij = charges[0]**0.8, charges[1]**0.8, coods[0]-coods[1]
+        
+                    pref, dist = z1*z2, np.linalg.norm(rij)
+
+                    twob = np.array([[pref, dist], [pref, dist]])
+                    
+                    bags[j][:4] = radial_integrals(size,rlength,twob,step_r)     
+
+                mat[ind:ind+num] = -np.sort(-bags,axis=0)
+                
+            ind += asize[key]
 
     return mat
                         
@@ -548,7 +568,7 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                     z=elements[key][1]
                     bag=np.zeros((comb(asize[key],2)))
                     vec=[]
-                    for r1,r2 in combinations(elements[key][0],2):
+                    for (r1,r2) in combinations(elements[key][0],2):
                         vec.append(z**2/np.linalg.norm(r1-r2))
                     bag[:len(vec)]=vec
                     bag=-np.sort(-bag)
@@ -557,7 +577,7 @@ def bob(atoms,coods, asize={'C': 7, 'H': 16, 'N': 3, 'O': 3, 'S': 1}):
                     z1,z2=elements[key][1],elements[keys[j]][1]
                     bag=np.zeros((asize[key]*asize[keys[j]]))
                     vec=[]
-                    for r1,r2 in product(elements[key][0],elements[keys[j]][0]):
+                    for (r1,r2) in product(elements[key][0],elements[keys[j]][0]):
                         vec.append(z1*z2/np.linalg.norm(r1-r2))
                     bag[:len(vec)]=vec
                     bag=-np.sort(-bag)
