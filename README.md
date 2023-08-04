@@ -48,6 +48,10 @@ The `binsize` keyword controls the grid-spacing used for discretizing the densit
 
 The `bw` keyword controls the bandwidth hyperparameter of the representation. The default value is 0.07 but this should be screened once in the range `[0.01,1]` for new datasets and when changing the grid-spacing using the `binsize` parameter.
 
+# References
+Please consider citing the following work :
+Danish Khan, Stefan Heinen, O. Anatole von Lilienfeld; Kernel based quantum machine learning at record rate: Many-body distribution functionals as compact representations. J. Chem. Phys. 21 July 2023; 159 (3): 034106. https://doi.org/10.1063/5.0152215
+
 # Kernels
 * For MBDF it is recommended to use the `get_local_symmetric_kernel_mbdf` and `get_local_kernel_mbdf` available at the qmlcode fork : https://github.com/dkhan42/qml2/tree/develop
 * Wrappers for training KRR models using qmlcode and examples for using these scripts are available at : https://github.com/dkhan42/QML
