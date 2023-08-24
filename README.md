@@ -1,5 +1,5 @@
 # MBDF
-Python script for generating the local/global Many Body Distribution Functionals (MBDF) and global Density of Functionals (DF) representations.
+Python script for generating the local/global Many Body Distribution Functionals (MBDF) and Density of Functionals (DF) representations.
 It also contains functions for generating the Coulomb Matrix (CM) and Bag of Bonds (BOB) representations.
 
 # Dependencies
@@ -16,7 +16,7 @@ If a progress bar is desired during the representation generation then the `tqdm
 from MBDF import generate_mbdf
 rep_local = generate_mbdf(charges, coordinates)
 ```
-* To generate a flattened, bagged form which can be used as a global representation:
+* To generate a flattened, bagged form which can be used as a global feature vector:
 ```
 from MBDF import generate_mbdf
 rep_flattened = generate_mbdf(charges, coordinates, local = False)
@@ -36,7 +36,7 @@ It is recommended that the MBDF arrays be generated for the entire dataset (trai
 
 
 
-* To generate the **global** Density of functionals representation the MBDF array is required :
+* To generate the Density of functionals representation the MBDF array is required :
 ```
 from MBDF import generate_mbdf, generate_df
 mbdf = generate_mbdf(charges, coordinates)
