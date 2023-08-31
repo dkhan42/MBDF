@@ -1,6 +1,7 @@
 # MBDF
 Python script for generating the local/global Many Body Distribution Functionals (MBDF) and Density of Functionals (DF) representations.
 It also contains functions for generating the Coulomb Matrix (CM) and Bag of Bonds (BOB) representations.
+Note : The first functional from the paper has been split into two parts.
 
 # Dependencies
 Python libraries required : 
