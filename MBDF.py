@@ -59,7 +59,7 @@ def generate_data(size,z,atom,charges,coods,cutoff_r=12):
 
         if rij_norm!=0 and rij_norm<cutoff_r:
             z2=charges[j]**0.8
-            twob[j]=rij_norm,z*charges[j]
+            twob[j]=rij_norm,z1*charges[j]
 
             for k in range(size):
                 if j!=k:
