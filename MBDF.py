@@ -350,7 +350,7 @@ def generate_mbdf(nuclear_charges,coords,local=True,n_jobs=-1,pad=None,step_r=0.
     if pad==None:
         pad = max(lengths)
 
-    charges = np.array(charges)
+    #charges = np.array(charges)
 
     rlength = int(cutoff_r/step_r) + 1
     alength = int(np.pi/step_a) + 1
