@@ -57,6 +57,6 @@ The `bw` keyword controls the bandwidth hyperparameter of the representation. Th
 * Wrappers for training KRR models using qmlcode and examples for using these scripts are available at : https://github.com/dkhan42/QMLwrap
 
 # References
-Please consider citing the following work :
+Please cite following work :
 
 Danish Khan, Stefan Heinen, O. Anatole von Lilienfeld; Kernel based quantum machine learning at record rate: Many-body distribution functionals as compact representations. J. Chem. Phys. 21 July 2023; 159 (3): 034106. https://doi.org/10.1063/5.0152215
